@@ -6,16 +6,21 @@ import Atomics
 
 actor InMemoryRepository: BankRepository {
     private var storage = [UUID: Int]()
+    private let delay: UInt32
+    
+    init(delay: UInt32) {
+        self.delay = delay
+    }
     
     func store(_ account: AsyncBank.Account) {
         // simulate some async I/O
-        usleep(UInt32.random(in: 1000...5000))
+        usleep(delay)
         storage[account.id] = account.balance
     }
     
     func getAccount(_ accountID: UUID) -> Account {
         // simulate some async I/O
-        usleep(UInt32.random(in: 1000...5000))
+        usleep(delay)
         return Account(id: accountID, balance: storage[accountID] ?? 0)
     }
 }
@@ -23,17 +28,18 @@ actor InMemoryRepository: BankRepository {
 @Suite struct AsyncBankTests {
     let account1: Account
     let account2: Account
-    let bank: Bank
     
     init() async {
         account1 = Account()
         account2 = Account()
-        bank = await Bank(accounts: [account1, account2], repository: InMemoryRepository())
     }
     
-    @Test func depositAndTransferScenario() async {
-        let task1Complete = startTransfer1()
-        let task2Complete = startTransfer2()
+    @Test(arguments: [
+        0
+    ]) func asyncDepositAndTransferScenario(delay: UInt32) async {
+        let bank = await Bank(accounts: [account1, account2], repository: InMemoryRepository(delay: delay))
+        let task1Complete = startTransfer1(using: bank)
+        let task2Complete = startTransfer2(using: bank)
         
         waitForCompletion(task1Complete, task2Complete)
         
@@ -44,7 +50,7 @@ actor InMemoryRepository: BankRepository {
         #expect(account2Balance == 175)
     }
 
-    private func startTransfer1() -> ManagedAtomic<Bool> {
+    private func startTransfer1(using bank: Bank) -> ManagedAtomic<Bool> {
         let taskComplete = ManagedAtomic(false)
         
         Task {
@@ -56,7 +62,7 @@ actor InMemoryRepository: BankRepository {
         return taskComplete
     }
 
-    private func startTransfer2() -> ManagedAtomic<Bool> {
+    private func startTransfer2(using bank: Bank) -> ManagedAtomic<Bool> {
         let taskComplete = ManagedAtomic(false)
         
         Task {
