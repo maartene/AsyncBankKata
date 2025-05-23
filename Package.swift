@@ -5,11 +5,20 @@ import PackageDescription
 
 let package = Package(
     name: "AsyncBank",
+    platforms: [
+        .macOS(.v15)
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "AsyncBank",
             targets: ["AsyncBank"]),
+    ],
+    dependencies: [
+        .package(
+              url: "https://github.com/apple/swift-atomics.git",
+              .upToNextMajor(from: "1.2.0") // or `.upToNextMinor
+            )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -18,7 +27,10 @@ let package = Package(
             name: "AsyncBank"),
         .testTarget(
             name: "AsyncBankTests",
-            dependencies: ["AsyncBank"]
+            dependencies: [
+                "AsyncBank",
+                .product(name: "Atomics", package: "swift-atomics")
+            ]
         ),
     ]
 )
