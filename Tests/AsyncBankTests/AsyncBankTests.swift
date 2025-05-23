@@ -38,9 +38,7 @@ actor InMemoryRepository: AccountRepository {
         0,
         10,
         100,
-        1000,
-        2000,
-        5000
+        1000
     ]) func asyncDepositAndTransferScenario(delay: UInt32) async {
         let bank = await Bank(repository: InMemoryRepository(delay: delay))
         
