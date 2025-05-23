@@ -1,32 +1,15 @@
 import Foundation
 
-struct Account {
-    let id: UUID
-    private(set) var balance = 0
-    
-    init(id: UUID = UUID(), balance: Int = 0) {
-        self.id = id
-        self.balance = balance
-    }
-    
-    mutating func deposit(_ amount: Int) {
-        balance += amount
-    }
-    
-    mutating func withdraw(_ amount: Int) {
-        balance -= amount
-    }
+protocol AccountRepository: Actor {
+    func store(_ account: Account)
+    func getAccount(_ accountID: UUID) -> Account
 }
 
 actor Bank {
-    private let repository: BankRepository
+    private let repository: AccountRepository
     
-    init(accounts: [Account], repository: BankRepository) async {
+    init(repository: AccountRepository) async {
         self.repository = repository
-        
-        for account in accounts {
-            await repository.store(account)
-        }
     }
     
     func deposit(_ amount: Int, into accountID: UUID) async  {
@@ -59,8 +42,20 @@ actor Bank {
     }
 }
 
-
-protocol BankRepository: Actor {
-    func store(_ account: Account)
-    func getAccount(_ accountID: UUID) -> Account
+struct Account {
+    let id: UUID
+    private(set) var balance = 0
+    
+    init(id: UUID = UUID(), balance: Int = 0) {
+        self.id = id
+        self.balance = balance
+    }
+    
+    mutating func deposit(_ amount: Int) {
+        balance += amount
+    }
+    
+    mutating func withdraw(_ amount: Int) {
+        balance -= amount
+    }
 }

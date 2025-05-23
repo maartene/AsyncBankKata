@@ -4,7 +4,7 @@ import Atomics
 
 @testable import AsyncBank
 
-actor InMemoryRepository: BankRepository {
+actor InMemoryRepository: AccountRepository {
     private var storage = [UUID: Int]()
     private let delay: UInt32
     
@@ -25,7 +25,7 @@ actor InMemoryRepository: BankRepository {
     }
 }
 
-@Suite struct AsyncBankTests {
+@Suite("Bank should") struct AsyncBankTests {
     let account1: Account
     let account2: Account
     
@@ -34,11 +34,18 @@ actor InMemoryRepository: BankRepository {
         account2 = Account()
     }
     
-    @Test(arguments: [
-        0
+    @Test("deposit and transfor money for two transactions correctly", arguments: [
+        0,
+        10,
+        100,
+        1000,
+        2000,
+        5000
     ]) func asyncDepositAndTransferScenario(delay: UInt32) async {
-        let bank = await Bank(accounts: [account1, account2], repository: InMemoryRepository(delay: delay))
+        let bank = await Bank(repository: InMemoryRepository(delay: delay))
+        
         let task1Complete = startTransfer1(using: bank)
+        usleep(10_000)
         let task2Complete = startTransfer2(using: bank)
         
         waitForCompletion(task1Complete, task2Complete)
@@ -49,7 +56,8 @@ actor InMemoryRepository: BankRepository {
         #expect(account1Balance == 125)
         #expect(account2Balance == 175)
     }
-
+    
+    // MARK: test helpers
     private func startTransfer1(using bank: Bank) -> ManagedAtomic<Bool> {
         let taskComplete = ManagedAtomic(false)
         
