@@ -8,6 +8,8 @@ The bank is backed by a `AccountRepository` that holds accounts. An `Account` is
 The test scenario simulates two clients posting transactions to the `Bank`. And even though the end state when both transactions clear is predictable, it may not always reach that state. In other words, this test is flaky. Its your job to:
 * find out why this is happening;
 * provide a solution that makes the test no longer flaky.
+* feel free to change the `Bank`s public facing API. As long as you don't touch the `AccountRepository` protocol and allow for multiple clients to post transactions concurrently.
+* if you feel adventurous, maybe you can simulate more clients posting more transactions.
 
 ### Note:
 Currently the tests most likely pass. However, should you:
