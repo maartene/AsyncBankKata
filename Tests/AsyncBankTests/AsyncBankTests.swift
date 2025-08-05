@@ -51,6 +51,18 @@ import Atomics
                 #expect(finalBalanceOfSourceAccount == 30)
                 #expect(finalBalanceOfDestinationAccount == 70)
             }
+
+            @Test("not decrease the balance of the source account and increase the balance of the target account when there is insufficient balance") func notTransferAmountInsufficientBalance() async {
+                let bank = await Bank(repository: InMemoryRepository())
+                await bank.executeTransaction(.deposit(amount: 100, accountID: sourceAccount.id))
+
+                await bank.executeTransaction(.transfer(amount: 170, from: sourceAccount.id, to: destinationAccount.id))
+                
+                let finalBalanceOfSourceAccount = await bank.balanceFor(sourceAccount.id)
+                let finalBalanceOfDestinationAccount = await bank.balanceFor(destinationAccount.id)
+                #expect(finalBalanceOfSourceAccount == 100)
+                #expect(finalBalanceOfDestinationAccount == 0)
+            }
         }
 
     @Suite("for multiple simultaneous transactions") struct MultipleSimultaniousTransactions {
