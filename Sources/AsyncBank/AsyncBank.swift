@@ -11,8 +11,23 @@ actor Bank {
     init(repository: AccountRepository) async {
         self.repository = repository
     }
+
+    func balanceFor(_ accountID: UUID) async -> Int {
+        await repository.getAccount(accountID).balance
+    }
+
+    func executeTransaction(_ transaction: Transaction) async {
+        switch transaction {
+        case .deposit(let amount, let accountID):
+            await deposit(amount, into: accountID)
+        case .transfer(let amount, let from, let to):
+            await transfer(amount, from: from, into: to)
+        case .withdraw(let amount, let accountID):
+            await withdraw(amount, from: accountID)
+        }
+    }
     
-    func deposit(_ amount: Int, into accountID: UUID) async  {
+    private func deposit(_ amount: Int, into accountID: UUID) async  {
         var account = await repository.getAccount(accountID)
         
         account.deposit(amount)
@@ -20,7 +35,7 @@ actor Bank {
         await repository.store(account)
     }
     
-    func withdraw(_ amount: Int, from accountID: UUID) async  {
+    private func withdraw(_ amount: Int, from accountID: UUID) async  {
         var account = await repository.getAccount(accountID)
         
         account.withdraw(amount)
@@ -28,17 +43,13 @@ actor Bank {
         await repository.store(account)
     }
     
-    func transfer(_ amount: Int, from sourceAccountID: UUID, into destinationAccountID: UUID) async  {
+    private func transfer(_ amount: Int, from sourceAccountID: UUID, into destinationAccountID: UUID) async  {
         guard await balanceFor(sourceAccountID) >= amount else {
             return
         }
         
         await deposit(amount, into: destinationAccountID)
         await withdraw(amount, from: sourceAccountID)
-    }
-    
-    func balanceFor(_ accountID: UUID) async -> Int {
-        await repository.getAccount(accountID).balance
     }
 }
 

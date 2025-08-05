@@ -55,7 +55,6 @@ actor InMemoryRepository: AccountRepository {
         #expect(account2Balance == 175)
     }
     
-    // MARK: test helpers
     private func startTransfer1(using bank: Bank) -> ManagedAtomic<Bool> {
         startTransfer(using: bank, transactions: [
             .deposit(amount: 100, accountID: account1.id),
@@ -67,33 +66,7 @@ actor InMemoryRepository: AccountRepository {
         startTransfer(using: bank, transactions: [
             .deposit(amount: 200, accountID: account1.id),
             .transfer(amount: 150, from: account1.id, to: account2.id)
-            ])
-    }
-
-    private func startTransfer(using bank: Bank, transactions: [Transaction]) -> ManagedAtomic<Bool> {
-        let taskComplete = ManagedAtomic(false)
-        
-        Task {
-            for transactions in transactions {
-                switch transactions {
-                case .deposit(let amount, let accountID):
-                    await bank.deposit(amount, into: accountID)
-                case .transfer(let amount, let from, let to):
-                    await bank.transfer(amount, from: from, into: to)
-                case .withdraw(let amount, let accountID):
-                    await bank.withdraw(amount, from: accountID)
-                }
-            }
-            taskComplete.store(true, ordering: .relaxed)
-        }
-        
-        return taskComplete
-    }
-
-    private func waitForCompletion(_ tasks: ManagedAtomic<Bool>...) {
-        while tasks.contains(where: { $0.load(ordering: .relaxed) == false }) {
-            usleep(1000)
-        }
+        ])
     }
 }
 
