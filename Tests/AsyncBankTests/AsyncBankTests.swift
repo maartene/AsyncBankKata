@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-import Atomics
 
 @testable import AsyncBank
 
@@ -37,34 +36,33 @@ import Atomics
     }
     
     @Suite("when transferring from one account into another") struct TransferBetweenAccounts {
-            let sourceAccount = Account()
-            let destinationAccount = Account()
+        let sourceAccount = Account()
+        let destinationAccount = Account()
 
-            @Test("decrease the balance of the source account and increase the balance of the target account") func transferAmount() async {
-                let bank = await Bank(repository: InMemoryRepository())
-                await bank.executeTransaction(.deposit(amount: 100, accountID: sourceAccount.id))
+        @Test("decrease the balance of the source account and increase the balance of the target account") func transferAmount() async {
+            let bank = await Bank(repository: InMemoryRepository())
+            await bank.executeTransaction(.deposit(amount: 100, accountID: sourceAccount.id))
 
-                await bank.executeTransaction(.transfer(amount: 70, from: sourceAccount.id, to: destinationAccount.id))
-                
-                let finalBalanceOfSourceAccount = await bank.balanceFor(sourceAccount.id)
-                let finalBalanceOfDestinationAccount = await bank.balanceFor(destinationAccount.id)
-                #expect(finalBalanceOfSourceAccount == 30)
-                #expect(finalBalanceOfDestinationAccount == 70)
-            }
-
-            @Test("not decrease the balance of the source account and increase the balance of the target account when there is insufficient balance") func notTransferAmountInsufficientBalance() async {
-                let bank = await Bank(repository: InMemoryRepository())
-                await bank.executeTransaction(.deposit(amount: 100, accountID: sourceAccount.id))
-
-                await bank.executeTransaction(.transfer(amount: 170, from: sourceAccount.id, to: destinationAccount.id))
-                
-                let finalBalanceOfSourceAccount = await bank.balanceFor(sourceAccount.id)
-                let finalBalanceOfDestinationAccount = await bank.balanceFor(destinationAccount.id)
-                #expect(finalBalanceOfSourceAccount == 100)
-                #expect(finalBalanceOfDestinationAccount == 0)
-            }
+            await bank.executeTransaction(.transfer(amount: 70, from: sourceAccount.id, to: destinationAccount.id))
+            
+            let finalBalanceOfSourceAccount = await bank.balanceFor(sourceAccount.id)
+            let finalBalanceOfDestinationAccount = await bank.balanceFor(destinationAccount.id)
+            #expect(finalBalanceOfSourceAccount == 30)
+            #expect(finalBalanceOfDestinationAccount == 70)
         }
 
+        @Test("not decrease the balance of the source account and increase the balance of the target account when there is insufficient balance") func notTransferAmountInsufficientBalance() async {
+            let bank = await Bank(repository: InMemoryRepository())
+            await bank.executeTransaction(.deposit(amount: 100, accountID: sourceAccount.id))
+
+            await bank.executeTransaction(.transfer(amount: 170, from: sourceAccount.id, to: destinationAccount.id))
+            
+            let finalBalanceOfSourceAccount = await bank.balanceFor(sourceAccount.id)
+            let finalBalanceOfDestinationAccount = await bank.balanceFor(destinationAccount.id)
+            #expect(finalBalanceOfSourceAccount == 100)
+            #expect(finalBalanceOfDestinationAccount == 0)
+        }
+    }
 
     @Suite("for multiple simultaneous transactions") struct MultipleSimultaniousTransactions {
         let account1 = Account()
@@ -91,14 +89,14 @@ import Atomics
             #expect(account2Balance == 175)
         }
         
-        private func startTransfer1(using bank: Bank) -> ManagedAtomic<Bool> {
+        private func startTransfer1(using bank: Bank) -> SafeBool {
             startTransfer(using: bank, transactions: [
                 .deposit(amount: 100, accountID: account1.id),
                 .transfer(amount: 25, from: account1.id, to: account2.id)
             ])
         }
 
-        private func startTransfer2(using bank: Bank) -> ManagedAtomic<Bool> {
+        private func startTransfer2(using bank: Bank) -> SafeBool {
             startTransfer(using: bank, transactions: [
                 .deposit(amount: 200, accountID: account1.id),
                 .transfer(amount: 150, from: account1.id, to: account2.id)

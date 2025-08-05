@@ -20,3 +20,5 @@ func waitForCompletion(_ tasks: ManagedAtomic<Bool>...) {
         usleep(1000)
     }
 }
+
+typealias SafeBool = ManagedAtomic<Bool>

@@ -10,13 +10,14 @@ actor InMemoryRepository: AccountRepository {
     
     /// Initializes the repository with an optional delay for simulating asynchronous I/O.
     /// - Parameter delay: The delay in microseconds to simulate I/O operations. Defaults to 0.
+    /// - Note: The actual delay for the operations is `delay` +/- 10%.
     init(delay: UInt32 = 0) {
         self.delay = delay
     }
     
     /// Stores an account in the repository.
     /// - Parameter account: The account to store.
-    /// - Note: This method simulates some asynchronous I/O by sleeping for the specified delay.
+    /// - Note: This method simulates some asynchronous I/O by sleeping for approximately the specified delay (+/- 10%).
     func store(_ account: AsyncBank.Account) {
         // simulate some async I/O
         usleep(approximately(delay))
@@ -26,7 +27,7 @@ actor InMemoryRepository: AccountRepository {
     /// Retrieves an account by its ID.
     /// - Parameter accountID: The UUID of the account to retrieve.
     /// - Returns: The account with the specified ID, or a new account with a balance of 0 if it does not exist.
-    /// - Note: This method simulates some asynchronous I/O by sleeping for the specified delay.
+    /// - Note: This method simulates some asynchronous I/O by sleeping for approximately the specified delay (+/- 10%).
     func getAccount(_ accountID: UUID) -> Account {
         // simulate some async I/O
         usleep(approximately(delay))
