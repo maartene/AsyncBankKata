@@ -59,3 +59,9 @@ struct Account {
         balance -= amount
     }
 }
+
+enum Transaction {
+    case deposit(amount: Int, accountID: UUID)
+    case transfer(amount: Int, from: UUID, to: UUID)
+    case withdraw(amount: Int, accountID: UUID)
+}

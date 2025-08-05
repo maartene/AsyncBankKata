@@ -57,23 +57,33 @@ actor InMemoryRepository: AccountRepository {
     
     // MARK: test helpers
     private func startTransfer1(using bank: Bank) -> ManagedAtomic<Bool> {
-        let taskComplete = ManagedAtomic(false)
-        
-        Task {
-            await bank.deposit(100, into: account1.id)
-            await bank.transfer(25, from: account1.id, into: account2.id)
-            taskComplete.store(true, ordering: .relaxed)
-        }
-        
-        return taskComplete
+        startTransfer(using: bank, transactions: [
+            .deposit(amount: 100, accountID: account1.id),
+            .transfer(amount: 25, from: account1.id, to: account2.id)
+        ])
     }
 
     private func startTransfer2(using bank: Bank) -> ManagedAtomic<Bool> {
+        startTransfer(using: bank, transactions: [
+            .deposit(amount: 200, accountID: account1.id),
+            .transfer(amount: 150, from: account1.id, to: account2.id)
+            ])
+    }
+
+    private func startTransfer(using bank: Bank, transactions: [Transaction]) -> ManagedAtomic<Bool> {
         let taskComplete = ManagedAtomic(false)
         
         Task {
-            await bank.deposit(200, into: account1.id)
-            await bank.transfer(150, from: account1.id, into: account2.id)
+            for transactions in transactions {
+                switch transactions {
+                case .deposit(let amount, let accountID):
+                    await bank.deposit(amount, into: accountID)
+                case .transfer(let amount, let from, let to):
+                    await bank.transfer(amount, from: from, into: to)
+                case .withdraw(let amount, let accountID):
+                    await bank.withdraw(amount, from: accountID)
+                }
+            }
             taskComplete.store(true, ordering: .relaxed)
         }
         
