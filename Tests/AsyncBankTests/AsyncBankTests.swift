@@ -90,8 +90,8 @@ actor InMemoryRepository: AccountRepository {
         return taskComplete
     }
 
-    private func waitForCompletion(_ task1Complete: ManagedAtomic<Bool>, _ task2Complete: ManagedAtomic<Bool>) {
-        while task1Complete.load(ordering: .relaxed) == false || task2Complete.load(ordering: .relaxed) == false {
+    private func waitForCompletion(_ tasks: ManagedAtomic<Bool>...) {
+        while tasks.contains(where: { $0.load(ordering: .relaxed) == false }) {
             usleep(1000)
         }
     }
