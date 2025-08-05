@@ -74,7 +74,7 @@ import Atomics
             0,
             10,
             100,
-            1000
+            1000,
         ]) func asyncDepositAndTransferScenario(delay: UInt32) async {
             let bank = await Bank(repository: InMemoryRepository(delay: delay))
             

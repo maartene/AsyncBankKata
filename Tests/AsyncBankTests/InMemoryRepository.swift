@@ -19,7 +19,7 @@ actor InMemoryRepository: AccountRepository {
     /// - Note: This method simulates some asynchronous I/O by sleeping for the specified delay.
     func store(_ account: AsyncBank.Account) {
         // simulate some async I/O
-        usleep(delay)
+        usleep(approximately(delay))
         storage[account.id] = account.balance
     }
     
@@ -29,7 +29,12 @@ actor InMemoryRepository: AccountRepository {
     /// - Note: This method simulates some asynchronous I/O by sleeping for the specified delay.
     func getAccount(_ accountID: UUID) -> Account {
         // simulate some async I/O
-        usleep(delay)
+        usleep(approximately(delay))
         return Account(id: accountID, balance: storage[accountID] ?? 0)
+    }
+
+    private func approximately(_ value: UInt32) -> UInt32 {
+        let range = (Double(value) * 0.9 ... Double(value) * 1.1)
+        return UInt32(Double.random(in: range))
     }
 }
