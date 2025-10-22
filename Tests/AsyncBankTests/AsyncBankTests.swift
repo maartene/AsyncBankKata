@@ -75,34 +75,41 @@ import Testing
             1000,
         ]) func asyncDepositAndTransferScenario(delay: UInt32) async {
             let bank = await Bank(repository: InMemoryRepository(delay: delay))
-            
-            let task1Complete = startTransfer1(using: bank)
+
+            async let t1 = startTransfer1(using: bank)
             usleep(10_000)
-            let task2Complete = startTransfer2(using: bank)
-            
-            waitForCompletion(task1Complete, task2Complete)
-            
+            async let t2 = startTransfer2(using: bank)
+            await t1.value
+            await t2.value
+
             let account1Balance = await bank.balanceFor(account1.id)
             let account2Balance = await bank.balanceFor(account2.id)
-            
+
             #expect(account1Balance == 125)
             #expect(account2Balance == 175)
         }
         
-        private func startTransfer1(using bank: Bank) -> SafeBool {
+        private func startTransfer1(using bank: Bank) -> Task<Void, Never> {
             startTransfer(using: bank, transactions: [
                 .deposit(amount: 100, accountID: account1.id),
                 .transfer(amount: 25, from: account1.id, to: account2.id)
             ])
         }
 
-        private func startTransfer2(using bank: Bank) -> SafeBool {
+        private func startTransfer2(using bank: Bank) -> Task<Void, Never> {
             startTransfer(using: bank, transactions: [
                 .deposit(amount: 200, accountID: account1.id),
                 .transfer(amount: 150, from: account1.id, to: account2.id)
             ])
         }
-    }    
-}
 
+        private func startTransfer(using bank: Bank, transactions: [Transaction]) -> Task<Void, Never> {
+            Task {
+                for transaction in transactions {
+                    await bank.executeTransaction(transaction)
+                }
+            }   
+        }
+    }
+}
 
