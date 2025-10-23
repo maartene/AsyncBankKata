@@ -5,7 +5,9 @@ import Foundation
 /// Inject an `AccountRepository` to handle account storage and retrieval.
 actor Bank {
     private let repository: AccountRepository
-    
+    // Global queue to serialize transactions (coarse-grained). Extracted to helper type.
+    private let globalQueue = GlobalTransactionQueue()
+
     /// Initializes the Bank with a given repository.
     init(repository: AccountRepository) async {
         self.repository = repository
@@ -22,6 +24,9 @@ actor Bank {
     /// - Parameter transaction: The transaction to execute, which can be a deposit, transfer, or withdrawal.
     /// - Note: This method will return when the transaction is complete.
     func executeTransaction(_ transaction: Transaction) async {
+        // Acquire the global transaction lock to serialize execution
+        await globalQueue.acquire()
+        defer { Task { await globalQueue.release() } }
         switch transaction {
         case .deposit(let amount, let accountID):
             await deposit(amount, into: accountID)
@@ -31,39 +36,39 @@ actor Bank {
             await withdraw(amount, from: accountID)
         }
     }
-    
+
     /// Deposits an amount into a specific account.
     /// - Parameters:
     ///   - amount: The amount to deposit.
     ///   - accountID: The UUID of the account to deposit into.
     /// - Note: This method will return when the deposit is complete.
     /// - Note: If an unknown account ID is provided, the deposit will create the account.
-    private func deposit(_ amount: Int, into accountID: UUID) async  {
+    private func deposit(_ amount: Int, into accountID: UUID) async {
         var account = await repository.getAccount(accountID)
-        
+
         account.deposit(amount)
-        
+
         await repository.store(account)
     }
-    
+
     /// Withdraws an amount from a specific account.
     /// - Parameters:
     ///   - amount: The amount to withdraw.
     ///   - accountID: The UUID of the account to withdraw from.
     /// - Note: This method will return when the withdrawal is complete.
     /// - Note: If the account does not have enough balance or does not exist, the withdrawal will fail silently.
-    private func withdraw(_ amount: Int, from accountID: UUID) async  {
+    private func withdraw(_ amount: Int, from accountID: UUID) async {
         var account = await repository.getAccount(accountID)
 
         guard account.balance >= amount else {
-            return // Cannot withdraw if insufficient balance
+            return  // Cannot withdraw if insufficient balance
         }
-        
+
         account.withdraw(amount)
-        
+
         await repository.store(account)
     }
-    
+
     /// Transfers an amount from one account to another.
     /// - Parameters:
     ///   - amount: The amount to transfer.
@@ -71,14 +76,18 @@ actor Bank {
     ///   - destinationAccountID: The UUID of the account to transfer into.
     /// - Note: This method will return when the transfer is complete.
     /// - Note: If the source account does not have enough balance or does not exist, the transfer will fail silently.
-    private func transfer(_ amount: Int, from sourceAccountID: UUID, into destinationAccountID: UUID) async  {
-        guard await balanceFor(sourceAccountID) >= amount else {
-            return
-        }
-        
+    private func transfer(
+        _ amount: Int, from sourceAccountID: UUID, into destinationAccountID: UUID
+    ) async {
+        // Caller holds locks for both accounts; perform check and operations while locks held
+        guard await balanceFor(sourceAccountID) >= amount else { return }
+
+        // perform deposit first then withdraw to keep semantics from original implementation
         await deposit(amount, into: destinationAccountID)
         await withdraw(amount, from: sourceAccountID)
     }
+
+    // (Global queue logic moved to `GlobalTransactionQueue` in a separate file.)
 }
 
 /// Represents a transaction that can be executed on the bank.
@@ -111,7 +120,7 @@ protocol AccountRepository: Actor {
 struct Account {
     let id: UUID
     private(set) var balance = 0
-    
+
     /// Initializes a new account with a unique identifier and an optional initial balance.
     /// - Parameters:
     ///   - id: The unique identifier for the account. Defaults to a new UUID.
@@ -120,13 +129,13 @@ struct Account {
         self.id = id
         self.balance = balance
     }
-    
+
     /// Deposits an amount into the account.
     /// - Parameter amount: The amount to deposit into the account.
     mutating func deposit(_ amount: Int) {
         balance += amount
     }
-    
+
     /// Withdraws an amount from the account.
     /// - Parameter amount: The amount to withdraw from the account.
     /// - Note: This method does not check if the account has sufficient balance.
@@ -134,4 +143,3 @@ struct Account {
         balance -= amount
     }
 }
-
