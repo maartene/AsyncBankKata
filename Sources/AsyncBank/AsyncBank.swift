@@ -26,7 +26,7 @@ actor Bank {
     func executeTransaction(_ transaction: Transaction) async {
         // Acquire the global transaction lock to serialize execution
         await globalQueue.acquire()
-        defer { Task { await globalQueue.release() } }
+        defer { globalQueue.release() }
         switch transaction {
         case .deposit(let amount, let accountID):
             await deposit(amount, into: accountID)
