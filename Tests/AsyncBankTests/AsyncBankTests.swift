@@ -133,7 +133,7 @@ import Testing
 
             #expect(await bank.balanceFor(account1.id) == 100)
             #expect(await bank.balanceFor(account2.id) == 100)
-            #expect(await bank.balanceFor(account2.id) == 100)
+            #expect(await bank.balanceFor(account3.id) == 100)
         }
         
         private func startTransfer(using bank: Bank, transactions: [Transaction]) -> Task<Void, Never> {
