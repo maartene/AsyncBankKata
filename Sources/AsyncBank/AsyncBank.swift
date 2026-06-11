@@ -5,8 +5,8 @@ import Foundation
 /// Inject an `AccountRepository` to handle account storage and retrieval.
 actor Bank {
     private let repository: AccountRepository
-    // Global queue to serialize transactions (coarse-grained). Extracted to helper type.
-    private let globalQueue = GlobalTransactionQueue()
+    // Global queue to serialize transactions (coarse-grained).
+    private let globalQueue = AsyncMutex()
 
     /// Initializes the Bank with a given repository.
     init(repository: AccountRepository) async {
@@ -86,8 +86,6 @@ actor Bank {
         await deposit(amount, into: destinationAccountID)
         await withdraw(amount, from: sourceAccountID)
     }
-
-    // (Global queue logic moved to `GlobalTransactionQueue` in a separate file.)
 }
 
 /// Represents a transaction that can be executed on the bank.

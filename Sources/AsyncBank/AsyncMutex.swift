@@ -1,6 +1,8 @@
 import Foundation
 
-/// A small FIFO global transaction queue helper for serializing work inside an actor.
+/// A small FIFO async mutex helper for serializing work inside an actor.
+/// Recommend to name the local variable holding the AsyncMutex instance with queue.
+/// Because it keep track of all waiters and helps them one at a time.
 ///
 /// Usage (from an actor):
 ///   await queue.acquire()
@@ -32,7 +34,7 @@ import Foundation
 ///   - If no waiters remain, set `locked = false` (the queue becomes free).
 ///
 /// This design keeps the common uncontended path cheap and the ownership semantics explicit.
-actor GlobalTransactionQueue {
+actor AsyncMutex {
     // true when an active owner holds the global lock
     private var locked = false
     // suspended acquirers waiting in FIFO order
