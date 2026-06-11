@@ -15,15 +15,6 @@ actor InMemoryRepository: AccountRepository {
         self.delay = delay
     }
     
-    /// Stores an account in the repository.
-    /// - Parameter account: The account to store.
-    /// - Note: This method simulates some asynchronous I/O by sleeping for approximately the specified delay (+/- 10%).
-    func store(_ account: AsyncBank.Account) {
-        // simulate some async I/O
-        usleep(approximately(delay))
-        storage[account.id] = account.balance
-    }
-    
     /// Retrieves an account by its ID.
     /// - Parameter accountID: The UUID of the account to retrieve.
     /// - Returns: The account with the specified ID, or a new account with a balance of 0 if it does not exist.
@@ -37,5 +28,23 @@ actor InMemoryRepository: AccountRepository {
     private func approximately(_ value: UInt32) -> UInt32 {
         let range = (Double(value) * 0.9 ... Double(value) * 1.1)
         return UInt32(Double.random(in: range))
+    }
+    
+    func performAtomicOperation(_ operations: [AccountBalanceOperation]) throws {
+        var updatedAccounts = storage
+        
+        for operation in operations {
+                var account = Account(id: operation.accountID, balance: storage[operation.accountID] ?? 0)
+                switch operation.delta {
+                case .increase(let amount):
+                    account.deposit(amount)
+                case .decrease(let amount):
+                    try account.withdraw(amount)
+                }
+                
+                updatedAccounts[operation.accountID] = account.balance
+        }
+            
+        storage = updatedAccounts
     }
 }
