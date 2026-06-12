@@ -107,18 +107,5 @@ struct Account {
         self.id = id
         self.balance = balance
     }
-    
-    /// Deposits an amount into the account.
-    /// - Parameter amount: The amount to deposit into the account.
-    mutating func deposit(_ amount: Int) {
-        balance += amount
-    }
-    
-    /// Withdraws an amount from the account.
-    /// - Parameter amount: The amount to withdraw from the account.
-    /// - Note: This method does not check if the account has sufficient balance.
-    mutating func withdraw(_ amount: Int) {
-        balance -= amount
-    }
 }
 
