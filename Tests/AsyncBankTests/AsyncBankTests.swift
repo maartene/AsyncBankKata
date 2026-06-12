@@ -62,6 +62,7 @@ import Testing
     @Suite struct `Scenario: multiple sequential transactions` {
         let account1 = Account()
         let account2 = Account()
+        let account3 = Account()
         
         let transactions: [Transaction]
         
@@ -88,6 +89,22 @@ import Testing
 
             #expect(await bank.balanceFor(account1.id) == 125)
             #expect(await bank.balanceFor(account2.id) == 175)
+        }
+        
+        @Test(arguments: [
+            0,
+            10,
+            100,
+            1000,
+        ]) func `Example: two sequential transactions that cannot be performed`(delay: UInt32) async {
+            let bank = await Bank(repository: InMemoryRepository(delay: delay))
+            
+            await bank.executeTransaction(Transaction.transfer(amount: 10, from: account1.id, to: account2.id))
+            await bank.executeTransaction(Transaction.transfer(amount: 5, from: account2.id, to: account3.id))
+                
+            #expect(await bank.balanceFor(account1.id) == 0)
+            #expect(await bank.balanceFor(account2.id) == 0)
+            #expect(await bank.balanceFor(account3.id) == 0)
         }
     }
     

@@ -10,7 +10,7 @@ actor Bank {
     init(repository: TransactionRepository) async {
         self.repository = repository
     }
-
+    
     /// Retrieves the balance for a specific account.
     /// - Parameter accountID: The UUID of the account to check.
     /// - Returns: The balance of the account, or 0 if the account does not exist
@@ -21,22 +21,18 @@ actor Bank {
         for transaction in transactions {
             switch transaction {
             case .deposit(let amount, let accountID):
-                if let index = accounts.firstIndex(where: { $0.id == accountID }) {
-                    accounts[index] = Account(id: accountID, balance: accounts[index].balance + amount)
-                } else {
-                    accounts.append(.init(id: accountID, balance: amount))
-                }
+                executeDeposit(accountID: accountID, amount: amount, accounts: &accounts)
             case .withdraw(let amount, let accountID):
-                if let index = accounts.firstIndex(where: { $0.id == accountID }), accounts[index].balance >= amount {
-                    accounts[index] = Account(id: accountID, balance: accounts[index].balance - amount)
-                }
-            default:
-                break // no-op
+                executeWithdrawal(accountID: accountID, amount: amount, accounts: &accounts)
+            case .transfer(let amount, let sourceAccountID, let destinationAccountID):
+                executeTransfer(amount: amount, sourceAccountID: sourceAccountID, destinationAccountID: destinationAccountID, accounts: &accounts)
             }
         }
         
         return accounts.first(where: { $0.id == accountID })?.balance ?? 0
     }
+    
+    
 
     /// Executes a transaction on the bank.
     /// - Parameter transaction: The transaction to execute, which can be a deposit, transfer, or withdrawal.
@@ -44,6 +40,41 @@ actor Bank {
     func executeTransaction(_ transaction: Transaction) async {
         await repository.store(transaction)
     }
+    
+    private func executeDeposit(accountID: UUID, amount: Int, accounts: inout [Account]) {
+        if let index = accounts.firstIndex(where: { $0.id == accountID }) {
+            accounts[index] = Account(id: accountID, balance: accounts[index].balance + amount)
+        } else {
+            accounts.append(.init(id: accountID, balance: amount))
+        }
+    }
+    
+    private func executeWithdrawal(accountID: UUID, amount: Int, accounts: inout [Account]) {
+        if let index = accounts.firstIndex(where: { $0.id == accountID }), accounts[index].balance >= amount {
+            accounts[index] = Account(id: accountID, balance: accounts[index].balance - amount)
+        }
+    }
+    
+    private func executeTransfer(amount: Int, sourceAccountID: UUID, destinationAccountID: UUID, accounts: inout [Account]) {
+        if accounts.contains(where: { $0.id == sourceAccountID }) == false {
+            accounts.append(Account(id: sourceAccountID))
+        }
+        
+        if accounts.contains(where: { $0.id == destinationAccountID }) == false {
+            accounts.append(Account(id: destinationAccountID))
+        }
+        
+        let sourceAccountIndex = accounts.firstIndex(where: { $0.id == sourceAccountID })!
+        
+        let targetAccountIndex = accounts.firstIndex(where: { $0.id == destinationAccountID })!
+        
+        if accounts[sourceAccountIndex].balance >= amount {
+            accounts[sourceAccountIndex] = Account(id: sourceAccountID, balance: accounts[sourceAccountIndex].balance - amount)
+            accounts[targetAccountIndex] = Account(id: destinationAccountID, balance: accounts[targetAccountIndex].balance + amount)
+        }
+    }
+    
+    
 }
 
 /// Represents a transaction that can be executed on the bank.
