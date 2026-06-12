@@ -122,7 +122,6 @@ import Testing
             let bank = await Bank(repository: InMemoryRepository(delay: delay))
 
             async let t1 = startTransfer1(using: bank)
-            usleep(10_000)
             async let t2 = startTransfer2(using: bank)
             await t1.value
             await t2.value
@@ -140,9 +139,7 @@ import Testing
             let bank = await Bank(repository: InMemoryRepository(delay: delay))
 
             async let t3 = startTransfer3(using: bank)
-            usleep(10_000)
             async let t4 = startTransfer4(using: bank)
-            usleep(10_000)
             async let t5 = startTransfer5(using: bank)
             await t3.value
             await t4.value
