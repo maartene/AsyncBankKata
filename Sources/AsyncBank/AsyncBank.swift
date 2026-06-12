@@ -16,7 +16,7 @@ actor Bank {
     /// - Returns: The balance of the account, or 0 if the account does not exist
     func balanceFor(_ accountID: UUID) async -> Int {
         let transactions = await repository.retrieveTransactions()
-        var accounts = [Account]()
+        var accounts = AccountStorage()
         
         for transaction in transactions {
             switch transaction {
@@ -29,10 +29,8 @@ actor Bank {
             }
         }
         
-        return accounts.first(where: { $0.id == accountID })?.balance ?? 0
+        return accounts.getBalance(for: accountID)
     }
-    
-    
 
     /// Executes a transaction on the bank.
     /// - Parameter transaction: The transaction to execute, which can be a deposit, transfer, or withdrawal.
@@ -41,39 +39,40 @@ actor Bank {
         await repository.store(transaction)
     }
     
-    private func executeDeposit(accountID: UUID, amount: Int, accounts: inout [Account]) {
-        if let index = accounts.firstIndex(where: { $0.id == accountID }) {
-            accounts[index] = Account(id: accountID, balance: accounts[index].balance + amount)
-        } else {
-            accounts.append(.init(id: accountID, balance: amount))
+    private func executeDeposit(accountID: UUID, amount: Int, accounts: inout AccountStorage) {
+        accounts.addBalance(to: accountID, amount: amount)
+    }
+    
+    private func executeWithdrawal(accountID: UUID, amount: Int, accounts: inout AccountStorage) {
+        if accounts.getBalance(for: accountID) >= amount {
+            accounts.addBalance(to: accountID, amount: -amount)
         }
     }
     
-    private func executeWithdrawal(accountID: UUID, amount: Int, accounts: inout [Account]) {
-        if let index = accounts.firstIndex(where: { $0.id == accountID }), accounts[index].balance >= amount {
-            accounts[index] = Account(id: accountID, balance: accounts[index].balance - amount)
+    private func executeTransfer(amount: Int, sourceAccountID: UUID, destinationAccountID: UUID, accounts: inout AccountStorage) {
+        if accounts.getBalance(for: sourceAccountID) >= amount {
+            accounts.addBalance(to: sourceAccountID, amount: -amount)
+            accounts.addBalance(to: destinationAccountID, amount: amount)
         }
     }
     
-    private func executeTransfer(amount: Int, sourceAccountID: UUID, destinationAccountID: UUID, accounts: inout [Account]) {
-        if accounts.contains(where: { $0.id == sourceAccountID }) == false {
-            accounts.append(Account(id: sourceAccountID))
+    struct AccountStorage {
+        private var storage = [Account]()
+        
+        mutating func addBalance(to accountID: UUID, amount: Int) {
+            if let index = storage.firstIndex(where: { $0.id == accountID }) {
+                storage[index] = Account(id: accountID, balance: storage[index].balance + amount)
+            } else {
+                storage.append(Account(id: accountID, balance: amount))
+            }
         }
         
-        if accounts.contains(where: { $0.id == destinationAccountID }) == false {
-            accounts.append(Account(id: destinationAccountID))
-        }
-        
-        let sourceAccountIndex = accounts.firstIndex(where: { $0.id == sourceAccountID })!
-        
-        let targetAccountIndex = accounts.firstIndex(where: { $0.id == destinationAccountID })!
-        
-        if accounts[sourceAccountIndex].balance >= amount {
-            accounts[sourceAccountIndex] = Account(id: sourceAccountID, balance: accounts[sourceAccountIndex].balance - amount)
-            accounts[targetAccountIndex] = Account(id: destinationAccountID, balance: accounts[targetAccountIndex].balance + amount)
+        func getBalance(for accountID: UUID) -> Int {
+            storage.first {
+                $0.id == accountID
+            }?.balance ?? 0
         }
     }
-    
     
 }
 
