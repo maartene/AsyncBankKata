@@ -4,7 +4,7 @@ import Testing
 actor Counter {
     private var count = 0
     private var delay: UInt64 {
-        UInt64.random(in: 10_000_000...100_000_000)
+        UInt64.random(in: 1_000_000...10_000_000)
     }
 
     func addOne(taskID: Int = 0) async {
